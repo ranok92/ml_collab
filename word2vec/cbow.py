@@ -11,10 +11,13 @@ import os
 from tqdm import tqdm
 import numpy as np
 import pdb
+from tensorboardX import SummaryWriter
+
+
 class CBOW:
 
     def __init__(self, hidden_dim, path_to_json, l_rate=0.0001,
-                 batch_size=64, checkpoint_interval=None,
+                 batch_size=64, save_filename=None,
                  ):
         """
         Given the parameters initializes a CBOW style training class
@@ -45,15 +48,16 @@ class CBOW:
         #initialize other hyperparameters
         self.batch_size = batch_size
 
-
-
+        if save_filename:
+            self.save_folder = save_folder
+            self.tensorboard_writer = SummaryWriter(self.save_folder)
 
 
     def train(self, epochs, validation_split=0.5):
         """
         Trains the model for the number of epochs provided
         """        
-        dataset_size = self.dataset.__len__()
+        dataset_size = len(self.dataset)
         indices = list(range(dataset_size))
         split = int(np.floor(validation_split * dataset_size))
         np.random.shuffle(indices)
@@ -71,11 +75,11 @@ class CBOW:
                                     batch_size=self.batch_size,
                                     shuffle=True)
 
-        for i in tqdm(range(epochs)):
+        for i in range(epochs):
 
             epoch_loss = []
 
-
+            print("Starting epoch : ", i)
             for batch_i, (input_samples, output_samples) in enumerate(train_dataloader):
 
                 input_samples = input_samples.to(self.device).type(torch.float)
@@ -87,7 +91,10 @@ class CBOW:
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                print(loss)
+
+                print ("Loss : ", loss, end='\r')
+
+        #torch.save(self.network.state_dict(), save_filename)
 
         return 0
 
@@ -96,7 +103,7 @@ class CBOW:
 if __name__ == '__main__':
     
     cbow_test = CBOW(300, 'cbow_style_training_dataset.json')
-    cbow_test.train(20)
+    cbow_test.train(2)
 
 
 
