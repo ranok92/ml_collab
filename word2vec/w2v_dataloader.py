@@ -31,10 +31,11 @@ class CBOW_dataset():
     def __getitem__(self, idx):
         words = self.json_data[idx]
         output, inputs = words[-1], words[:-1]
-        output_ohv = ut.get_one_hot_vec(output, self.vocab_word_to_idx)
+        #output_ohv = ut.get_one_hot_vec(output, self.vocab_word_to_idx)
+        output_class = self.vocab_word_to_idx[output]
         inputs_ohv = sum([ut.get_one_hot_vec(
             input, self.vocab_word_to_idx) for input in inputs])
-        return inputs_ohv, output_ohv
+        return inputs_ohv, output_class
 
 
 if __name__ == '__main__':
