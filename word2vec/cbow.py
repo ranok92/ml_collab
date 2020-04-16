@@ -46,6 +46,9 @@ class CBOW:
         self.batch_size = batch_size
 
 
+
+
+
     def train(self, epochs, validation_split=0.5):
         """
         Trains the model for the number of epochs provided
@@ -78,6 +81,7 @@ class CBOW:
                 input_samples = input_samples.to(self.device).type(torch.float)
                 output_samples = output_samples.to(self.device).type(torch.long)
                 
+
                 y_pred = self.network(input_samples)
                 loss = self.loss(y_pred, output_samples)
                 loss.backward()
