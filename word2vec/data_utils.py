@@ -216,9 +216,6 @@ def get_cbow_training_tuples(word_list, context_window=2):
     return training_tuples
 
 
-
-
-
 def create_skipgram_dataset(corpus_list, vocab_dict, context_window=2):
     '''
     Create the skipgram dataset
