@@ -88,7 +88,8 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
 
     fp_qwords= open(question_word_list, 'r')
     question_list = []
-
+    cosine_similarity = 0
+    tuples_skipped = 0
     #select the lines that are of the 4 word format
     for line in fp_qwords:
 
@@ -101,7 +102,8 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
                 stripped_words.append(word.strip())
 
             question_list.append(stripped_words)
-    
+    total_tuples = len(question_list)
+ 
     for test_tuple in question_list:
         #perform the testing operation here
 
@@ -109,14 +111,20 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
         vector_array = np.zeros((4, embedding_array.shape[1])) 
         for i in range(len(test_tuple)):
             
+            skip = False
             try:
                 vector_array[i, :] = embedding_array[vocab_dict[test_tuple[i]]]
             except KeyError:
                 print ("Could not find: '{}'. Skipping the entire tuple.".format(test_tuple[i]))
+                tuples_skipped += 1
+                skip = True
                 break
 
-        ipdb.set_trace()
-        cosine_similarity = get_cosine_similarity(vector_array)
+        if not skip:
+            cosine_similarity += get_cosine_similarity(vector_array)
+    print('Out of the initial {} tuples, {} tuples had atleast one word which was \
+not present in the vocabulary.'.format(total_tuples, tuples_skipped))
+    return cosine_similarity/(total_tuples-tuples_skipped)
 
 
 def get_cosine_similarity(vector_array):
@@ -134,7 +142,7 @@ def get_cosine_similarity(vector_array):
         cos ((word1-word2+word3), word4)
 
     '''
-    return spatial.distance.cosine((vector_array[0, :] - vector_array[1, :] + \
+    return 1 - spatial.distance.cosine((vector_array[1, :] - vector_array[0, :] + \
                                     vector_array[2, :]), vector_array[3, :]) 
    
 
@@ -142,5 +150,6 @@ def get_cosine_similarity(vector_array):
 
 if __name__=='__main__':
 
-    test_embedding_question_words('./data/embeddings.json', 
-                                  './data/questions-words.txt')
+    val = test_embedding_question_words('./data/embeddings.json', 
+                                  './data/questions-words.txt') 
+    ipdb.set_trace()
