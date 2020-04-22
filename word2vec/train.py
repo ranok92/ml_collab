@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from model import W2V_model
 from w2v_dataloader import CBOW_dataset, SkipGramDataset
+from test_embeddings import test_embedding_question_words
 import os
 
 import argparse
@@ -31,6 +32,7 @@ class W2VTrainer:
         assert os.path.isfile(opt.dataset_path), "Bad file path!!"
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+        print("Training on {}".format(self.device))
         self.dataset = CBOW_dataset(opt.dataset_path) if opt.dataset_type == 'cbow 'else SkipGramDataset(opt.dataset_path)
         self.batch_size = opt.batch_size
 
@@ -41,6 +43,10 @@ class W2VTrainer:
         # initialize training parameters
         self.optimizer = RMSprop(self.network.parameters(), lr=opt.lr)
         self.loss = nn.CrossEntropyLoss()
+
+        #testing parameters
+        self.test_interval = opt.checkpoint_interval 
+
 
     def train(self, opt):
         """
@@ -96,6 +102,15 @@ class W2VTrainer:
             if (epoch+1) % opt.checkpoint_interval == 0:
                 print("Saving the model after {} epoch".format(epoch + 1))
                 torch.save(self.network.state_dict(), "w2v_ckpt_epoch_{}.pth".format(epoch+1))
+
+                #testing for the cosine similarity
+                #get the current embedding
+                embedding_current = self.network.fc1.weight.clone().cpu().transpose(0, 1).detach().numpy()
+                emb_dict = {'vocab_dict':self.dataset.vocab_word_to_idx, 'embedding': embedding}
+
+                cosine_sim = test_embedding_question_words(emb_dict, './data/questions_words.txt')
+                print("Avg cosine similarity after {} epoch - {}".format(epoch+1, cosine_sim))
+
             print("="*20)
 
         return 0
@@ -127,8 +142,8 @@ if __name__ == '__main__':
 
     trainer = W2VTrainer(opt)
 
-    trainer.network.load_state_dict(torch.load('w2v_ckpt_epoch_18.pth'))
-    # trainer.train(opt)
-    ipdb.set_trace()
-    # trainer.save_embeddings()
+    #trainer.network.load_state_dict(torch.load('./data/w2v_ckpt_epoch_5.pth'))
+    trainer.train(opt)
+    #ipdb.set_trace()
+    trainer.save_embeddings()
 
