@@ -105,11 +105,13 @@ class W2VTrainer:
 
                 #testing for the cosine similarity
                 #get the current embedding
-                embedding_current = self.network.fc1.weight.clone().cpu().transpose(0, 1).detach().numpy()
-                emb_dict = {'vocab_dict':self.dataset.vocab_word_to_idx, 'embedding': embedding}
+                
+                if opt.test_file:
+                    embedding_current = self.network.fc1.weight.clone().cpu().transpose(0, 1).detach().numpy()
+                    emb_dict = {'vocab_dict':self.dataset.vocab_word_to_idx, 'embedding': embedding_current}
 
-                cosine_sim = test_embedding_question_words(emb_dict, './data/questions_words.txt')
-                print("Avg cosine similarity after {} epoch - {}".format(epoch+1, cosine_sim))
+                    cosine_sim = test_embedding_question_words(emb_dict, opt.test_file)
+                    print("Avg cosine similarity after {} epoch - {}".format(epoch+1, cosine_sim))
 
             print("="*20)
 
@@ -136,6 +138,8 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_path", type=str, required=True, help="path to the JSON dataset")
     parser.add_argument("--validation_split", type=float,
                         default=0.1, help="Dataset validation split")
+    parser.add_argument("--test_file", type=str, help="path to the file used in the testing part")
+    
     opt = parser.parse_args()
     print("=" * 10, "HYPERPARAMETERS", "=" * 10)
     print(opt)
