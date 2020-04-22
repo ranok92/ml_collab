@@ -4,6 +4,8 @@ import ipdb
 import os
 import json
 from scipy import spatial
+from tqdm import tqdm
+
 
 def get_word_embedding_dictionary(vocab_dictionary, word_em_wt_matrix):
     '''
@@ -111,13 +113,13 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
 
         #an array that stores the embeddings of the words in the current test_tuple
         vector_array = np.zeros((4, embedding_array.shape[1])) 
-        for i in range(len(test_tuple)):
+        for i in tqdm(range(len(test_tuple))):
             
             skip = False
             try:
                 vector_array[i, :] = embedding_array[vocab_dict[test_tuple[i]]]
             except KeyError:
-                print ("Could not find: '{}'. Skipping the entire tuple.".format(test_tuple[i]))
+                #print ("Could not find: '{}'. Skipping the entire tuple.".format(test_tuple[i]))
                 tuples_skipped += 1
                 skip = True
                 break

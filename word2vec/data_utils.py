@@ -155,7 +155,7 @@ def create_cbow_dataset(corpus_list, save_filename=None, context_window=2):
 
     cbow_dataset = []
 
-    for sentence in corpus_list:
+    for sentence in tqdm(corpus_list):
 
         training_tuples = get_cbow_training_tuples(
             sentence, context_window=context_window)
@@ -284,7 +284,7 @@ def get_skipgram_training_tuples(word_list, context_window):
 
 if __name__ == '__main__':
 
-    # clean_data('./gutenberg', store=True, filename='mini_gutenberg.json')
+    #clean_data('./gutenberg', store=True, filename='part_gutenberg.json')
     # create_vocab('./mini_gutenberg.json', store=True, vocab_dict_name='part_gutenberg_dict.json',
     #             vocab_list_name='part_gutenberg_list.json')
     '''
@@ -296,5 +296,9 @@ if __name__ == '__main__':
 
     pdb.set_trace()
     '''
+    create_cbow_dataset('./data/part_gutenberg.json',
+                        'cbow_style_dataset_part_gutenberg.json')
+    '''
     create_skipgram_dataset('./mini_gutenberg.json',
                             'skipgram_style_training_dataset_nr.json')
+    '''
