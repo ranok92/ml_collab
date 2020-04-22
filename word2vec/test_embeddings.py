@@ -57,6 +57,7 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
     input:
         w2vec_embeddings_json : a json file containing the word embeddings and the 
                             vocab_dictionary.
+                            Can be a filename or the dictionary itself
                             keys : <'vocab_dict', 'embedding'>
                             vocab_dict : contains a dictionary for the words in the 
                                          vocabulary and their index values
@@ -73,9 +74,10 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
     '''
     #read the word embedding file
 
-    assert os.path.isfile(w2vec_embeddings_json), "File does not exist."
-    fp_embedding = open(w2vec_embeddings_json)
-    w2vec_embeddings_json = json.load(fp_embedding)
+    if type(w2vec_embeddings_json)==str:
+        assert os.path.isfile(w2vec_embeddings_json), "File does not exist."
+        fp_embedding = open(w2vec_embeddings_json)
+        w2vec_embeddings_json = json.load(fp_embedding)
 
     embedding_list = w2vec_embeddings_json['embedding']
     vocab_dict = w2vec_embeddings_json['vocab_dict']
