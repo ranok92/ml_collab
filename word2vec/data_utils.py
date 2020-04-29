@@ -9,6 +9,8 @@ from tqdm import tqdm
 from itertools import chain
 import numpy as np
 import json
+import ipdb
+from collections import OrderedDict
 
 
 def clean_data(parent_folder, store=False, filename=None):
@@ -38,6 +40,11 @@ def clean_data(parent_folder, store=False, filename=None):
     line_break_pattern = re.compile(r'[\r\n]')
     char_pattern = re.compile(r'[^a-zA-Z]')
     filelist = None
+
+    #maintain a a frequency dictionary
+    freq_dict = {}
+
+
     for root, dirs, file in os.walk(parent_folder):
 
         filelist = file
@@ -60,7 +67,7 @@ def clean_data(parent_folder, store=False, filename=None):
         sentences = nltk.sent_tokenize(clean_data3)
         for sentence in sentences:
 
-            # print('Original sentence :', sentence)
+            #print('Original sentence :', sentence)
             filtered_sentence = []
             word_list = sentence.strip().split(' ')
             # print('The word_list :', word_list)
@@ -71,15 +78,35 @@ def clean_data(parent_folder, store=False, filename=None):
                     filtered_sentence.append(
                         re.sub(char_pattern, '', word.lower()))
 
+            for filt_words in filtered_sentence:
+                if filt_words in freq_dict.keys():
+                    freq_dict[filt_words] += 1
+                else:
+                    freq_dict[filt_words] = 1
+
             corpus_list.append(filtered_sentence)
-            # print('The filtered_sentence :', filtered_sentence)
-            # pdb.set_trace()
+            #print('The filtered_sentence :', filtered_sentence)
+            #ipdb.set_trace()
+
+    sorted_freq_dict = OrderedDict(sorted(freq_dict.items(), key=lambda t: t[1]))
+
+    thresh_words = []
+    freq_dict = {}
+    for word in sorted_freq_dict.keys():
+        if sorted_freq_dict[word] > 5:
+            thresh_words.append(word)
+        if sorted_freq_dict[word] not in freq_dict.keys():
+            freq_dict[sorted_freq_dict[word]] = 1
+        else:
+            freq_dict[sorted_freq_dict[word]] += 1 
 
     if store:
         with open(filename, 'w') as f:
             json.dump(corpus_list, f)
 
-    return corpus_list
+    
+    ipdb.set_trace()
+    return corpus_list, freq_dict, sorted_freq_dict
 
 
 def create_vocab(corpus_list, store=False,
@@ -284,8 +311,8 @@ def get_skipgram_training_tuples(word_list, context_window):
 
 if __name__ == '__main__':
 
-    #clean_data('./gutenberg', store=True, filename='part_gutenberg.json')
-    # create_vocab('./mini_gutenberg.json', store=True, vocab_dict_name='part_gutenberg_dict.json',
+    clean_data('./data/test_gutenberg', store=True, filename='part_gutenberg_test.json')
+    #create_vocab('./mini_gutenberg.json', store=True, vocab_dict_name='part_gutenberg_dict.json',
     #             vocab_list_name='part_gutenberg_list.json')
     '''
     with open('./part_gutenberg_list', "rb") as fp:
@@ -295,10 +322,10 @@ if __name__ == '__main__':
         vocab_dict = pickle.load(fp)
 
     pdb.set_trace()
-    '''
+    
     create_cbow_dataset('./data/part_gutenberg.json',
                         'cbow_style_dataset_part_gutenberg.json')
-    '''
+ 
     create_skipgram_dataset('./mini_gutenberg.json',
                             'skipgram_style_training_dataset_nr.json')
     '''

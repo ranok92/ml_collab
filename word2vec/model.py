@@ -11,14 +11,17 @@ class W2V_model(nn.Module):
         self.hidden_dim = hidden_dim
         self.vocab_size = vocab_size
         
-        self.fc1 = nn.Linear(vocab_size, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, vocab_size)
+        self.fc1 = nn.Linear(vocab_size, hidden_dim) #projection layer
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim) #hidden layer   
+        self.fc3 = nn.Linear(hidden_dim, vocab_size) #output layer
 
         nn.init.kaiming_normal_(self.fc1.weight)
         nn.init.kaiming_normal_(self.fc2.weight)
+        nn.init.kaiming_normal_(self.fc3.weight)
 
 
     def forward(self, x):
         x = self.fc1(x)
+        x = self.fc2(x)
         x = self.fc2(x)
         return x
