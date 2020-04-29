@@ -13,7 +13,7 @@ import ipdb
 from collections import OrderedDict
 
 
-def clean_data(parent_folder, store=False, filename=None):
+def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
     """
     Given the absolute path to a folder, reads all the txt files from within,
     cleans them [removing punctuations,
@@ -90,23 +90,34 @@ def clean_data(parent_folder, store=False, filename=None):
 
     sorted_freq_dict = OrderedDict(sorted(freq_dict.items(), key=lambda t: t[1]))
 
-    thresh_words = []
-    freq_dict = {}
-    for word in sorted_freq_dict.keys():
-        if sorted_freq_dict[word] > 5:
-            thresh_words.append(word)
-        if sorted_freq_dict[word] not in freq_dict.keys():
-            freq_dict[sorted_freq_dict[word]] = 1
-        else:
-            freq_dict[sorted_freq_dict[word]] += 1 
+    low_freq_words = []
+
+    #
+    corpus_list_high_freq = []
+
+    for sentence in corpus_list:
+        contains_lowFreq = False
+        for word in sentence:
+
+            if sorted_freq_dict[word] < freqency_threshold:
+                contains_lowFreq = True
+                break
+
+        if not contains_lowFreq:
+
+            corpus_list_high_freq.append(sentence)
+
+    print("Original corpus list length :{}".format(len(corpus_list)))
+
+    print("Lenght of corpus of high frequency words :{}".format(len(corpus_list_high_freq)))
+
 
     if store:
         with open(filename, 'w') as f:
-            json.dump(corpus_list, f)
+            json.dump(corpus_list_high_freq, f)
 
     
-    ipdb.set_trace()
-    return corpus_list, freq_dict, sorted_freq_dict
+    return corpus_list, corpus_list_high_freq, sorted_freq_dict
 
 
 def create_vocab(corpus_list, store=False,
@@ -311,7 +322,9 @@ def get_skipgram_training_tuples(word_list, context_window):
 
 if __name__ == '__main__':
 
-    clean_data('./data/test_gutenberg', store=True, filename='part_gutenberg_test.json')
+    clean_data('./data/test_gutenberg', store=True, 
+                filename='part_gutenberg_test.json',
+                freqency_threshold=10)
     #create_vocab('./mini_gutenberg.json', store=True, vocab_dict_name='part_gutenberg_dict.json',
     #             vocab_list_name='part_gutenberg_list.json')
     '''
