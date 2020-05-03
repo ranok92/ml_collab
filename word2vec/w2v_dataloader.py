@@ -5,7 +5,7 @@ import numpy as np
 import utils as ut
 
 
-class CBOW_dataset():
+class CBOW_dataset(Dataset):
     """CBOW dataset """
 
     def __init__(self, cbow_json_path):
@@ -44,7 +44,7 @@ class SkipGramDataset(Dataset):
     def __init__(self, skipgram_json_path):
         """
         Args:
-            skipgram_json_path : The SkupGram JSON dataset path
+            skipgram_json_path : The SkipGram JSON dataset path
         """
         self.vocab_word_to_idx = {}
         self.vocab_set = set()

@@ -10,9 +10,9 @@ class W2V_model(nn.Module):
         super(W2V_model, self).__init__()
         self.hidden_dim = hidden_dim
         self.vocab_size = vocab_size
-        
+
         self.fc1 = nn.Linear(vocab_size, hidden_dim) #projection layer
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim) #hidden layer   
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim) #hidden layer
         self.fc3 = nn.Linear(hidden_dim, vocab_size) #output layer
 
         nn.init.kaiming_normal_(self.fc1.weight)
@@ -25,3 +25,33 @@ class W2V_model(nn.Module):
         x = self.fc2(x)
         x = self.fc3(x)
         return x
+
+class W2V_SGNS_model(nn.Module):
+    """ This class represents the Word2Vec Negative sampling model"""
+
+    def __init__(self, vocab_size, hidden_dim=300):
+        super(W2V_SGNS_model, self).__init__()
+
+        self.hidden_dim = hidden_dim
+        self.vocab_size = vocab_size
+
+        self.embedding = torch.randn(self.vocab_size, self.hidden_dim, requires_grad=True)
+        self.context = torch.randn(self.vocab_size, self.hidden_dim, requires_grad=True)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, input_idxs, context_idxs):
+        """
+        Does a forward pass given the input and output word indices.
+        Performs a dot prooduct between them and applies sigmoid to get
+        output.
+        Arguments:
+        input_idxs : Input word indices (type list)
+        output_idxs : Context word indices (type list)
+        """
+
+        input_embeddings = self.embedding[input_idxs]
+        context_embeddings = self.context[context_idxs]
+        output = self.sigmoid(torch.sum(input_embeddings * context_embeddings, dim=1)).view(-1, 1)
+        return output
+
+
