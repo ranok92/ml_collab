@@ -3,6 +3,9 @@ from torch.utils.data import Dataset, DataLoader
 import json
 import numpy as np
 import utils as ut
+import pdb
+import os
+from torch.distributions import Categorical
 
 
 class CBOW_dataset(Dataset):
@@ -46,6 +49,8 @@ class SkipGramDataset(Dataset):
         Args:
             skipgram_json_path : The SkipGram JSON dataset path
         """
+        assert os.path.isfile(skipgram_json_path), "File does not exist."
+
         self.vocab_word_to_idx = {}
         self.vocab_set = set()
         with open(skipgram_json_path) as f:
@@ -69,26 +74,43 @@ class SkipGramDataset(Dataset):
         output_class = self.vocab_word_to_idx[output]
         return input_ohv, output_class
 
+
+
 class SkipGramNegativeSamplingDataset(Dataset):
     """Skip Gram Neagtive Sampling Dataset"""
 
     def __init__(self, skipgram_json_path, k=5):
         """
         Args:
-            skipgram_json_path : The SkipGram JSON dataset path
+            skipgram_json_path : The path to a json dictionary containing 
+                                the dataset and the frequency dictionary.
+
+                                {'dataset': dataset, 'freq_dict':frequency dictionary}
         """
         self.k = k
         self.vocab_word_to_idx = {}
         self.vocab_set = set()
+        assert os.path.isfile(skipgram_json_path), "File does not exist."
+
         with open(skipgram_json_path) as f:
             self.json_data = json.load(f)
-            for ith_words in self.json_data:
-                input, output = ith_words[0], ith_words[1]
-                self.vocab_set.add(input)
+
+            dataset = self.json_data['dataset']
+            for ith_words in dataset:
+                inp, output = ith_words[0], ith_words[1]
+                self.vocab_set.add(inp)
                 self.vocab_set.add(output)
+
+
         self.vocab_set = list(self.vocab_set)
         for idx, word in enumerate(self.vocab_set):
             self.vocab_word_to_idx[word] = idx
+        self.word_freq_distribution = [self.json_data['freq_dict'][word] for word in self.vocab_set]
+
+        total_freq = sum(self.word_freq_distribution)
+        self.word_freq_prob = [x/total_freq for x in self.word_freq_distribution]
+        self.sampling_distribution = Categorical(torch.tensor(self.word_freq_prob))
+
 
     def get_negative_samples(self, input_idx, output_idx):
         # returns a list of negative samples
@@ -101,8 +123,25 @@ class SkipGramNegativeSamplingDataset(Dataset):
                     break
         return neg_idxs
 
+
+    def get_negative_samples_proportional(self, input_idx, output_idx):
+
+        black_list = [input_idx, output_idx]
+        neg_idx = []
+        while len(neg_idx) < self.k:
+            idx = self.sampling_distribution.sample()
+            print(idx)
+            if idx not in black_list:
+                
+                neg_idx.append(idx.item())
+                black_list.append(idx.item())
+
+        return neg_idx
+
+
     def __len__(self):
-        return len(self.json_data)
+        return len(self.json_data['dataset'])
+
 
     def __getitem__(self, idx):
         input_idxs, output_idxs, targets = [], [], []
@@ -122,7 +161,14 @@ class SkipGramNegativeSamplingDataset(Dataset):
 
         # Add the negative samples
         input_idxs.extend([input_idx] * self.k)
-        output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
+        
+        #for uniform distribution
+        #output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
+        
+        #for distribution proportional to the frequency of the
+        #words
+        output_idxs.extend(self.get_negative_samples_proportional(input_idx, output_idx))
+
 
         # Add the negative targets
         targets.extend([0] * self.k)
@@ -134,5 +180,5 @@ class SkipGramNegativeSamplingDataset(Dataset):
 
 
 if __name__ == '__main__':
-    cbow_dataset = CBOW_dataset('cbow_style_training_dataset.json')
-    print(cbow_dataset[1])
+    skipgram = SkipGramNegativeSamplingDataset('nano_skipgram.json')
+    samples = skipgram.get_negative_samples_proportional(1, 3)
