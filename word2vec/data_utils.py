@@ -261,8 +261,12 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
         context_window : A integer containing the length of the context window
 
     ouput:
-        skipgram_dataset : A list where each entry is a list of words of the following format
-                        [ inp_word, outputword]
+        dataset : A dictionary containing two things:
+            {'dataset' : skipgram_dataset, 'freq_dict' : freq_dict}
+            skipgram_dataset : A list where each entry is a list of words of the following format
+                            [ inp_word, outputword]
+            freq_dict : A dictionary containing the frequency of occurence of each of the words
+                        { word : frequency }
     '''
     assert isinstance(corpus_list, (list, str)), "corpus_list should either be a\
     list containing the list of words or a path to the filename containing the same."
@@ -275,7 +279,17 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
         corpus_list = json.load(fp)
 
     skipgram_dataset = set()
+    frequency_dict = {}
 
+    #get the word frequencies
+    for sentence in tqdm(corpus_list):
+        for word in sentence:
+            if word not in frequency_dict.keys():
+                frequency_dict[word] = 1
+            else:
+                frequency_dict[word] += 1
+
+    #create the datset set
     for sentence in tqdm(corpus_list):
         skipgram_dataset.update(get_skipgram_training_tuples(
             sentence, context_window=context_window))
@@ -283,9 +297,9 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
     skipgram_dataset = [list(i) for i in skipgram_dataset]
     # create a json file
     with open(save_filename, "w") as fp:
-        json.dump(skipgram_dataset, fp)
+        json.dump({'dataset': skipgram_dataset, 'freq_dict': frequency_dict}, fp)
 
-    return skipgram_dataset
+    return {'dataset': skipgram_dataset, 'freq_dict': frequency_dict}
 
 
 def get_skipgram_training_tuples(word_list, context_window):
