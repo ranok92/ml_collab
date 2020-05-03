@@ -35,8 +35,8 @@ class W2V_SGNS_model(nn.Module):
         self.hidden_dim = hidden_dim
         self.vocab_size = vocab_size
 
-        self.embedding = torch.randn(self.vocab_size, self.hidden_dim, requires_grad=True)
-        self.context = torch.randn(self.vocab_size, self.hidden_dim, requires_grad=True)
+        self.embedding = nn.Parameter(torch.randn(self.vocab_size, self.hidden_dim))
+        self.context = nn.Parameter(torch.randn(self.vocab_size, self.hidden_dim))
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_idxs, context_idxs):
