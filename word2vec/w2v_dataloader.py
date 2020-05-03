@@ -115,7 +115,7 @@ class SkipGramNegativeSamplingDataset(Dataset):
     def get_negative_samples(self, input_idx, output_idx):
         # returns a list of negative samples
         neg_idxs = []
-        for _ in range(k):
+        for _ in range(self.k):
             while True:
                 idx = np.random.randint(len(self.vocab_set))
                 if (idx not in [input_idx, output_idx]) and (idx not in neg_idxs):
@@ -176,7 +176,7 @@ class SkipGramNegativeSamplingDataset(Dataset):
         # Reshape the target
         targets = np.array(targets, dtype=np.float32).reshape(-1, 1)
         targets = torch.from_numpy(targets)
-        return input_idxs, output_idxs, targets
+        return torch.tensor(input_idxs), torch.tensor(output_idxs), targets
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import torch.nn as nn
 
 
 from model import W2V_model, W2V_SGNS_model
-from w2v_dataloader import CBOW_dataset, SkipGramDataset
+from w2v_dataloader import CBOW_dataset, SkipGramDataset, SkipGramNegativeSamplingDataset
 from test_embeddings import test_embedding_question_words
 import os
 
@@ -187,6 +187,10 @@ class W2V_SGNS_Trainer:
 
                 # input_samples = input_samples.to(self.device).type(torch.float)
                 # output_samples = output_samples.to(self.device).type(torch.long)
+                
+                input_idxs = input_idxs.view(-1,)
+                context_idxs = context_idxs.view(-1,)
+                targets = targets.view(-1, 1)
 
                 y_pred = self.network(input_idxs, context_idxs)
                 targets = targets.to(self.device)
