@@ -189,6 +189,7 @@ class W2V_SGNS_Trainer:
                 # output_samples = output_samples.to(self.device).type(torch.long)
 
                 y_pred = self.network(input_idxs, context_idxs)
+                targets = targets.to(self.device)
                 loss = self.loss(y_pred, targets)
 
                 loss.backward()

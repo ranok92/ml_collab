@@ -53,5 +53,3 @@ class W2V_SGNS_model(nn.Module):
         context_embeddings = self.context[context_idxs]
         output = self.sigmoid(torch.sum(input_embeddings * context_embeddings, dim=1)).view(-1, 1)
         return output
-
-
