@@ -82,7 +82,7 @@ class SkipGramNegativeSamplingDataset(Dataset):
     def __init__(self, skipgram_json_path, k=5):
         """
         Args:
-            skipgram_json_path : The path to a json dictionary containing 
+            skipgram_json_path : The path to a json dictionary containing
                                 the dataset and the frequency dictionary.
 
                                 {'dataset': dataset, 'freq_dict':frequency dictionary}
@@ -130,9 +130,8 @@ class SkipGramNegativeSamplingDataset(Dataset):
         neg_idx = []
         while len(neg_idx) < self.k:
             idx = self.sampling_distribution.sample()
-            print(idx)
             if idx not in black_list:
-                
+
                 neg_idx.append(idx.item())
                 black_list.append(idx.item())
 
@@ -147,7 +146,7 @@ class SkipGramNegativeSamplingDataset(Dataset):
         input_idxs, output_idxs, targets = [], [], []
 
         # get the ith word tuple from dataset
-        words = self.json_data[idx]
+        words = self.json_data['dataset'][idx]
         input, output = words[0], words[1]
         input_idx = self.vocab_word_to_idx[input]
         output_idx = self.vocab_word_to_idx[output]
@@ -161,13 +160,13 @@ class SkipGramNegativeSamplingDataset(Dataset):
 
         # Add the negative samples
         input_idxs.extend([input_idx] * self.k)
-        
+
         #for uniform distribution
-        #output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
-        
+        output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
+
         #for distribution proportional to the frequency of the
         #words
-        output_idxs.extend(self.get_negative_samples_proportional(input_idx, output_idx))
+        # output_idxs.extend(self.get_negative_samples_proportional(input_idx, output_idx))
 
 
         # Add the negative targets

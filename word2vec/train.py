@@ -185,15 +185,11 @@ class W2V_SGNS_Trainer:
             pbar = tqdm(train_dataloader)
             for batch_i, (input_idxs, context_idxs, targets) in enumerate(pbar):
 
-                # input_samples = input_samples.to(self.device).type(torch.float)
-                # output_samples = output_samples.to(self.device).type(torch.long)
-                
-                input_idxs = input_idxs.view(-1,)
-                context_idxs = context_idxs.view(-1,)
-                targets = targets.view(-1, 1)
+                input_idxs = input_idxs.view(-1,).to(self.device)
+                context_idxs = context_idxs.view(-1,).to(self.device)
+                targets = targets.view(-1, 1).to(self.device)
 
                 y_pred = self.network(input_idxs, context_idxs)
-                targets = targets.to(self.device)
                 loss = self.loss(y_pred, targets)
 
                 loss.backward()
@@ -216,7 +212,7 @@ class W2V_SGNS_Trainer:
                 #get the current embedding
 
                 if opt.test_file:
-                    embedding_current = self.network.embedding.cpu().detach().numpy()
+                    embedding_current = self.network.embedding.weight.cpu().detach().numpy()
                     emb_dict = {'vocab_dict':self.dataset.vocab_word_to_idx, 'embedding': embedding_current}
 
                     cosine_sim = test_embedding_question_words(emb_dict, opt.test_file)
@@ -232,7 +228,7 @@ class W2V_SGNS_Trainer:
         A JSON file will be saved as dictionary.
         Dictionary has vocabulary and embeddings.
         '''
-        embedding = self.network.embedding.cpu().detach().numpy()
+        embedding = self.network.embedding.weight.cpu().detach().numpy()
         embedding = embedding.tolist()
         emb_dict = {'vocab_dict':self.dataset.vocab_word_to_idx, 'embedding':embedding}
         with open('embeddings_sgns.json', 'w') as fp:

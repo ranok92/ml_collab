@@ -35,8 +35,8 @@ class W2V_SGNS_model(nn.Module):
         self.hidden_dim = hidden_dim
         self.vocab_size = vocab_size
 
-        self.embedding = nn.Parameter(torch.randn(self.vocab_size, self.hidden_dim))
-        self.context = nn.Parameter(torch.randn(self.vocab_size, self.hidden_dim))
+        self.embedding = nn.Embedding(self.vocab_size, self. hidden_dim)
+        self.context = nn.Embedding(self.vocab_size, self.hidden_dim)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, input_idxs, context_idxs):
@@ -49,7 +49,7 @@ class W2V_SGNS_model(nn.Module):
         output_idxs : Context word indices (type list)
         """
 
-        input_embeddings = self.embedding[input_idxs]
-        context_embeddings = self.context[context_idxs]
+        input_embeddings = self.embedding(input_idxs)
+        context_embeddings = self.context(context_idxs)
         output = self.sigmoid(torch.sum(input_embeddings * context_embeddings, dim=1)).view(-1, 1)
         return output

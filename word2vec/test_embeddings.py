@@ -113,7 +113,7 @@ def test_embedding_question_words(w2vec_embeddings_json, question_word_list):
 
         #an array that stores the embeddings of the words in the current test_tuple
         vector_array = np.zeros((4, embedding_array.shape[1]))
-        for i in tqdm(range(len(test_tuple))):
+        for i in range(len(test_tuple)):
 
             skip = False
             try:
@@ -174,7 +174,7 @@ def get_k_most_similar(word, w2vec_embeddings_json, k=10):
     try:
         word_vector = embedding_array[vocab_dict[word]] # Get the word vector
         distance_dict = {} # To store all words similarity
-        for key in tqdm(vocab_dict): # Loop for all words in vocabulary
+        for key in vocab_dict: # Loop for all words in vocabulary
             if key != word: # Check if word is not the same
                 key_vector = embedding_array[vocab_dict[key]]
                 cos_sim = 1 - spatial.distance.cosine(word_vector, key_vector)
