@@ -79,15 +79,26 @@ class SkipGramDataset(Dataset):
 class SkipGramNegativeSamplingDataset(Dataset):
     """Skip Gram Neagtive Sampling Dataset"""
 
-    def __init__(self, skipgram_json_path, k=5):
+    def __init__(self, skipgram_json_path, k=5, 
+                 sample_pool_size=100000,
+                 freq_power=1):
         """
         Args:
             skipgram_json_path : The path to a json dictionary containing
                                 the dataset and the frequency dictionary.
 
                                 {'dataset': dataset, 'freq_dict':frequency dictionary}
+            sample_pool_size : The number of samples selected according to the frequency 
+                                distribution from which the uniform sampling will take 
+                                place.
+            freq_power : The power to which each of the word frequencies are raised before
+                         generating the sampling distribution.
         """
         self.k = k
+        
+        self.distribution_sample_size = 5000000
+        self.freq_power = freq_power
+
         self.vocab_word_to_idx = {}
         self.vocab_set = set()
         assert os.path.isfile(skipgram_json_path), "File does not exist."
@@ -109,9 +120,31 @@ class SkipGramNegativeSamplingDataset(Dataset):
 
         total_freq = sum(self.word_freq_distribution)
         self.word_freq_prob = [x/total_freq for x in self.word_freq_distribution]
-        self.sampling_distribution = Categorical(torch.tensor(self.word_freq_prob))
+        self.word_freq_prob = np.power(self.word_freq_prob, self.freq_power)
+
+        self.sampling_distribution = np.random.choice(len(self.word_freq_prob), 
+                                                      self.distribution_sample_size,
+                                                      self.word_freq_prob)
 
 
+
+
+    def get_negative_samples(self, input_idx, output_idx):
+
+        neg_idxs = []
+        for _ in range(self.k):
+            while True:
+                idx = self.sampling_distribution[np.random.randint(self.distribution_sample_size)]
+                if (idx not in [input_idx, output_idx]) and (idx not in neg_idxs):
+                    neg_idxs.append(idx)
+                    break
+        return neg_idxs
+
+
+
+
+    #*****************obsolete code************************
+    '''
     def get_negative_samples(self, input_idx, output_idx):
         # returns a list of negative samples
         neg_idxs = []
@@ -122,6 +155,8 @@ class SkipGramNegativeSamplingDataset(Dataset):
                     neg_idxs.append(idx)
                     break
         return neg_idxs
+
+
 
 
     def get_negative_samples_proportional(self, input_idx, output_idx):
@@ -136,6 +171,8 @@ class SkipGramNegativeSamplingDataset(Dataset):
                 black_list.append(idx.item())
 
         return neg_idx
+    #*******************************************************
+    '''
 
 
     def __len__(self):
