@@ -2,8 +2,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import json
 import numpy as np
+from tqdm import tqdm
 import utils as ut
-import pdb
+import ipdb
 import os
 from torch.distributions import Categorical
 
@@ -79,7 +80,7 @@ class SkipGramDataset(Dataset):
 class SkipGramNegativeSamplingDataset(Dataset):
     """Skip Gram Neagtive Sampling Dataset"""
 
-    def __init__(self, skipgram_json_path, k=5, 
+    def __init__(self, skipgram_json_path, k=5,
                  sample_pool_size=100000,
                  freq_power=1):
         """
@@ -88,14 +89,14 @@ class SkipGramNegativeSamplingDataset(Dataset):
                                 the dataset and the frequency dictionary.
 
                                 {'dataset': dataset, 'freq_dict':frequency dictionary}
-            sample_pool_size : The number of samples selected according to the frequency 
-                                distribution from which the uniform sampling will take 
+            sample_pool_size : The number of samples selected according to the frequency
+                                distribution from which the uniform sampling will take
                                 place.
             freq_power : The power to which each of the word frequencies are raised before
                          generating the sampling distribution.
         """
         self.k = k
-        
+
         self.distribution_sample_size = 5000000
         self.freq_power = freq_power
 
@@ -107,7 +108,8 @@ class SkipGramNegativeSamplingDataset(Dataset):
             self.json_data = json.load(f)
 
             dataset = self.json_data['dataset']
-            for ith_words in dataset:
+            print("Building Vocabulary")
+            for ith_words in tqdm(dataset):
                 inp, output = ith_words[0], ith_words[1]
                 self.vocab_set.add(inp)
                 self.vocab_set.add(output)
@@ -117,30 +119,26 @@ class SkipGramNegativeSamplingDataset(Dataset):
         for idx, word in enumerate(self.vocab_set):
             self.vocab_word_to_idx[word] = idx
         self.word_freq_distribution = [self.json_data['freq_dict'][word] for word in self.vocab_set]
-
+        self.word_freq_distribution = np.power(self.word_freq_distribution, self.freq_power)
         total_freq = sum(self.word_freq_distribution)
         self.word_freq_prob = [x/total_freq for x in self.word_freq_distribution]
-        self.word_freq_prob = np.power(self.word_freq_prob, self.freq_power)
-
-        self.sampling_distribution = np.random.choice(len(self.word_freq_prob), 
-                                                      self.distribution_sample_size,
-                                                      self.word_freq_prob)
-
-
-
+        # self.sampling_distribution = np.random.choice(len(self.word_freq_prob),size=self.distribution_sample_size, p=self.word_freq_prob)
+        self.sampling_distribution = torch.multinomial(torch.tensor(self.word_freq_prob),
+        self.distribution_sample_size, replacement=True)
+        print(type(self.sampling_distribution))
 
     def get_negative_samples(self, input_idx, output_idx):
 
         neg_idxs = []
         for _ in range(self.k):
             while True:
-                idx = self.sampling_distribution[np.random.randint(self.distribution_sample_size)]
+                # idx = self.sampling_distribution[np.random.randint(self.distribution_sample_size)]
+                idx = np.random.randint(self.distribution_sample_size)
+                idx = self.sampling_distribution[idx].item()
                 if (idx not in [input_idx, output_idx]) and (idx not in neg_idxs):
                     neg_idxs.append(idx)
                     break
         return neg_idxs
-
-
 
 
     #*****************obsolete code************************
@@ -198,13 +196,18 @@ class SkipGramNegativeSamplingDataset(Dataset):
         # Add the negative samples
         input_idxs.extend([input_idx] * self.k)
 
-        #for uniform distribution
-        output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
-
-        #for distribution proportional to the frequency of the
-        #words
-        # output_idxs.extend(self.get_negative_samples_proportional(input_idx, output_idx))
-
+        #for word frequency based distribution
+        neg_idxs = []
+        for _ in range(self.k):
+            while True:
+                # idx = self.sampling_distribution[np.random.randint(self.distribution_sample_size)]
+                idx = np.random.randint(self.distribution_sample_size)
+                idx = self.sampling_distribution[idx].item()
+                if (idx not in [input_idx, output_idx]) and (idx not in neg_idxs):
+                    neg_idxs.append(idx)
+                    break
+        # output_idxs.extend(self.get_negative_samples(input_idx, output_idx))
+        output_idxs.extend(neg_idxs)
 
         # Add the negative targets
         targets.extend([0] * self.k)

@@ -138,7 +138,10 @@ class W2V_SGNS_Trainer:
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
         print("Training on {}".format(self.device))
-        self.dataset = SkipGramNegativeSamplingDataset(opt.dataset_path)
+        print("Loading the dataset")
+        self.dataset = SkipGramNegativeSamplingDataset(opt.dataset_path,
+                       k=opt.neg_sample_size, freq_power=0.75)
+        print("Dataset Loaded")
         self.batch_size = opt.batch_size
 
         # initialize the network
@@ -156,7 +159,10 @@ class W2V_SGNS_Trainer:
         """
         Trains the model for the number of epochs provided
         """
+        
         dataset_size = len(self.dataset)
+        
+        '''
         indices = list(range(dataset_size))
         split = int(np.floor(opt.validation_split * dataset_size))
         np.random.shuffle(indices)
@@ -165,14 +171,10 @@ class W2V_SGNS_Trainer:
 
         train_dataset = Subset(self.dataset, train_indices)
         val_dataset = Subset(self.dataset, val_indices)
+        '''
 
-        train_dataloader = DataLoader(train_dataset,
-                                      batch_size=self.batch_size,
-                                      shuffle=True, num_workers=4)
-
-        val_dataloader = DataLoader(val_dataset,
-                                    batch_size=self.batch_size,
-                                    shuffle=True)
+        train_dataloader = DataLoader(self.dataset,batch_size=self.batch_size,shuffle=True,num_workers=2)
+        # val_dataloader = DataLoader(val_dataset,batch_size=self.batch_size,shuffle=True)
 
         for epoch in range(opt.epochs):
 
