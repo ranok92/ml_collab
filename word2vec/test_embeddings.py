@@ -6,6 +6,10 @@ import json
 from scipy import spatial
 from tqdm import tqdm
 
+from gensim.models import Word2Vec
+from gensim.models import KeyedVectors
+
+
 
 def get_word_embedding_dictionary(vocab_dictionary, word_em_wt_matrix):
     '''
@@ -159,7 +163,8 @@ def get_k_most_similar(word, w2vec_embeddings_json, k=10):
         word: The input word
 
     output:
-        A list of k most similar words obtained from vocabulary
+        A list of tuples containing  k most similar words and their 
+            similarity obtained from vocabulary
 
     '''
     if type(w2vec_embeddings_json)==str:
@@ -181,12 +186,74 @@ def get_k_most_similar(word, w2vec_embeddings_json, k=10):
                 distance_dict[key] = cos_sim
         # Sort the
         k_similar_words = sorted(distance_dict, key=distance_dict.get, reverse=True)[:k]
-        return k_similar_words
+        similar_dict = []
+
+        for word in k_similar_words:
+            similar_dict.append((word, distance_dict[word]))
+
+        return similar_dict
     except KeyError:
         print("Word not found in vocabulary.")
 
+
+
+
+def compare_with_word2vec(word_list, w2vec_embeddings_json, 
+                          reference_filename,
+                          k=10):
+    '''
+    Given the wordlist returns the n most similar words.
+        input:
+            word_list ; list of words
+            w2vec_embeddings_json : filename of json obtained from training
+            reference_filename : filename of word2vec reference
+            k : number of most similar words to be extracted
+    '''
+    #load the Google word2vec
+    assert os.path.isfile(reference_filename), "File does not exist."
+
+    if type(w2vec_embeddings_json)==str:
+        assert os.path.isfile(w2vec_embeddings_json), "File does not exist."
+        fp_embedding = open(w2vec_embeddings_json)
+        w2vec_embeddings_json = json.load(fp_embedding)
+
+    print("Loading trained model.")
+    ref_model_w2v = KeyedVectors.load_word2vec_format(reference_filename , binary=True)
+    print("Loading reference model.")
+
+    reference_model = ref_model_w2v.wv
+    embedding_list = w2vec_embeddings_json['embedding'] # Get the embedding
+    embedding_array = np.asarray(embedding_list) # Convert it to numpy array
+    vocab_dict = w2vec_embeddings_json['vocab_dict'] # Vocab dictionary
+
+    #get the words
+    master_ref_list = []
+    master_sim_list = []
+    for word in word_list:
+
+        master_ref_list.append(ref_model_w2v.most_similar(positive=word, topn=k))
+
+        master_sim_list.append(get_k_most_similar(word, w2vec_embeddings_json, k=k))
+
+
+    return master_ref_list, master_sim_list
+
+
 if __name__=='__main__':
 
+    '''
     val = test_embedding_question_words('./data/embeddings.json',
                                   './data/questions-words.txt')
+    '''
+    '''
+    reference_filename = '../../NLP/GoogleNews-vectors-negative300.bin'
+    w2vec_embeddings_json = './data/embeddings_sgns.json'
+    word_list = ['man', 'fruit', 'bicycle', 'school']
+    ref, actia = compare_with_word2vec(word_list, w2vec_embeddings_json, 
+                          reference_filename,
+                          k=10)
+    '''
+    w2vec_embeddings_json = './data/embeddings_sgns.json'
+
+    most_similar = get_k_most_similar("apple", w2vec_embeddings_json, k=10)
     ipdb.set_trace()
