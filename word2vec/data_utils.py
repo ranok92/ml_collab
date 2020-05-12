@@ -9,7 +9,6 @@ from tqdm import tqdm
 from itertools import chain
 import numpy as np
 import json
-import ipdb
 from collections import OrderedDict
 
 
@@ -32,8 +31,6 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
     assert os.path.isdir(parent_folder), "Folder does not exist."
     assert store and filename is not None or not store, "Filename cannot be empty!"
 
-    # read files
-
     stop_words = set(stopwords.words('english'))
     pattern = re.compile(r'[^a-zA-Z.\' ]')
     blank_pattern = re.compile(' +')
@@ -41,22 +38,20 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
     char_pattern = re.compile(r'[^a-zA-Z]')
     filelist = None
 
-    #maintain a a frequency dictionary
+    # maintain a a frequency dictionary
     freq_dict = {}
 
-
+    # read files
     for root, dirs, file in os.walk(parent_folder):
-
         filelist = file
         break
 
     corpus_list = []
 
+    print("Generating Sentences")
     for f in tqdm(filelist):
-
         fo = open(os.path.join(parent_folder, f), 'rb')
         data = fo.read()
-
         data = data.decode('latin-1')
 
         clean_data1 = re.sub(line_break_pattern, ' ', data)
@@ -70,11 +65,10 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
             #print('Original sentence :', sentence)
             filtered_sentence = []
             word_list = sentence.strip().split(' ')
+
             # print('The word_list :', word_list)
             for word in word_list:
-
                 if word not in stop_words:
-
                     filtered_sentence.append(
                         re.sub(char_pattern, '', word.lower()))
 
@@ -85,86 +79,29 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
                     freq_dict[filt_words] = 1
 
             corpus_list.append(filtered_sentence)
-            #print('The filtered_sentence :', filtered_sentence)
-            #ipdb.set_trace()
 
     sorted_freq_dict = OrderedDict(sorted(freq_dict.items(), key=lambda t: t[1]))
-
     low_freq_words = []
-
-    #
     corpus_list_high_freq = []
 
     for sentence in corpus_list:
         contains_lowFreq = False
         for word in sentence:
-
             if sorted_freq_dict[word] < freqency_threshold:
                 contains_lowFreq = True
                 break
 
         if not contains_lowFreq:
-
             corpus_list_high_freq.append(sentence)
 
     print("Original corpus list length :{}".format(len(corpus_list)))
-
-    print("Lenght of corpus of high frequency words :{}".format(len(corpus_list_high_freq)))
-
+    print("Length of corpus of high frequency words :{}".format(len(corpus_list_high_freq)))
 
     if store:
         with open(filename, 'w') as f:
             json.dump(corpus_list_high_freq, f)
 
-    
     return corpus_list, corpus_list_high_freq, sorted_freq_dict
-
-
-def create_vocab(corpus_list, store=False,
-                 vocab_list_name=None,
-                 vocab_dict_name=None):
-    '''
-    Given a list of sentences or a filename that contains a list of sentences
-    creates and returns an ordered list containing all the words and a dictionary with the
-    keys as the words and values as the index of the word in the vocabulary list
-
-    input:
-        copus_list : A list of sentences/or a filename containing the same
-
-    output:
-        vocab_list : An ordered list containing the words.
-        vocab_dict : A dictionary contaning the words and their index in the
-                     vocab_list
-    '''
-    assert isinstance(corpus_list, (list, str)), "corpus_list should either be a \
-list containing the list of words or a path to the filename containing the same."
-
-    assert store and vocab_list_name is not None or not store, "Filename cannot be empty!"
-    assert store and vocab_dict_name is not None or not store, "Filename cannot be empty!"
-
-    if isinstance(corpus_list, str):
-        assert os.path.isfile(corpus_list), "File does not exist."
-        fp = open(corpus_list)
-        corpus_list = json.load(fp)
-
-    pdb.set_trace()
-    # create the vocab list
-    vocab_list = list(set(chain.from_iterable(corpus_list)))
-    vocab_list.sort()
-    # create a dictionary for faster access of each words in the vocabulary
-    vocab_dict = {}
-    for i in range(len(vocab_list)):
-        vocab_dict[vocab_list[i]] = i
-
-    # store the vocab and the vocab dictionary?
-    if store:
-        with open(vocab_list_name, "w") as fp:
-            json.dump(vocab_list, fp)
-
-        with open(vocab_dict_name, "w") as fp:
-            json.dump(vocab_dict, fp)
-
-    return vocab_list, vocab_dict
 
 
 def create_cbow_dataset(corpus_list, save_filename=None, context_window=2):
@@ -193,21 +130,24 @@ def create_cbow_dataset(corpus_list, save_filename=None, context_window=2):
 
     cbow_dataset = []
 
+    # get the word frequencies
+    print("Getting word frequencies")
     for sentence in tqdm(corpus_list):
+        for word in sentence:
+            if word not in frequency_dict.keys():
+                frequency_dict[word] = 1
+            else:
+                frequency_dict[word] += 1
 
-        training_tuples = get_cbow_training_tuples(
-            sentence, context_window=context_window)
-
+    print("Building dataset")
+    for sentence in tqdm(corpus_list):
+        training_tuples = get_cbow_training_tuples(sentence, context_window=context_window)
         for tuple_val in training_tuples:
-
             cbow_dataset.append(tuple_val)
 
     # create a json file
     with open(save_filename, "w") as fp:
-        json.dump(cbow_dataset, fp)
-
-    return cbow_dataset
-
+        json.dump({'dataset': cbow_dataset, 'freq_dict': frequency_dict}, fp)
 
 def get_cbow_training_tuples(word_list, context_window=2):
     '''
@@ -248,7 +188,6 @@ def get_cbow_training_tuples(word_list, context_window=2):
             context_words.append(index_word)
             training_tuples.append(context_words)
 
-        # pdb.set_trace()
     return training_tuples
 
 
@@ -281,7 +220,8 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
     skipgram_dataset = set()
     frequency_dict = {}
 
-    #get the word frequencies
+    # get the word frequencies
+    print("Getting word frequencies")
     for sentence in tqdm(corpus_list):
         for word in sentence:
             if word not in frequency_dict.keys():
@@ -289,18 +229,17 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
             else:
                 frequency_dict[word] += 1
 
-    #create the datset set
+    # create the dataset
+    print("Building dataset")
     for sentence in tqdm(corpus_list):
         skipgram_dataset.update(get_skipgram_training_tuples(
             sentence, context_window=context_window))
 
     skipgram_dataset = [list(i) for i in skipgram_dataset]
-    # create a json file
+
+    # create a JSON file
     with open(save_filename, "w") as fp:
         json.dump({'dataset': skipgram_dataset, 'freq_dict': frequency_dict}, fp)
-
-    return {'dataset': skipgram_dataset, 'freq_dict': frequency_dict}
-
 
 def get_skipgram_training_tuples(word_list, context_window):
     '''
@@ -336,23 +275,23 @@ def get_skipgram_training_tuples(word_list, context_window):
 
 if __name__ == '__main__':
 
-    clean_data('./data/test_gutenberg', store=True, 
-                filename='part_gutenberg_test.json',
-                freqency_threshold=10)
-    #create_vocab('./mini_gutenberg.json', store=True, vocab_dict_name='part_gutenberg_dict.json',
-    #             vocab_list_name='part_gutenberg_list.json')
-    '''
-    with open('./part_gutenberg_list', "rb") as fp:
-        vocab_list = pickle.load(fp)
+    parser = argparse.ArgumentParser()
 
-    with open('./part_gutenberg_dict', "rb") as fp:
-        vocab_dict = pickle.load(fp)
+    # parent folder contains all the txt files
+    parser.add_argument("--parent_folder", type=str, required=True, help="path to the parent folder")
+    parser.add_argument("--data_store_path", type=str, required=True, help="path to store the dataset")
+    parser.add_argument("--freq_threshold", type=int, default=100, help="frequecy threshold cutoff")
+    parser.add_argument("--context_window", type=int, default=2, help="context window size")
+    opt = parser.parse_args()
 
-    pdb.set_trace()
-    
-    create_cbow_dataset('./data/part_gutenberg.json',
-                        'cbow_style_dataset_part_gutenberg.json')
- 
-    create_skipgram_dataset('./mini_gutenberg.json',
-                            'skipgram_style_training_dataset_nr.json')
-    '''
+    clean_data(opt.parent_folder, store=True,
+                filename=os.path.join(opt.data_store_path, 'clean_data.json'),
+                freqency_threshold=opt.freq_threshold)
+
+    create_cbow_dataset(os.path.join(opt.data_store_path, 'clean_data.json'),
+                        save_filename=os.path.join(opt.data_store_path, 'cbow_style_training_dataset.json'),
+                        context_window=opt.context_window)
+
+    create_skipgram_dataset(os.path.join(opt.data_store_path, 'clean_data.json'),
+                            save_filename=os.path.join(opt.data_store_path,'skipgram_style_training_dataset.json'),
+                            context_window=opt.context_window)
