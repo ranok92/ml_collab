@@ -241,8 +241,16 @@ if __name__=='__main__':
     # Get similar words
     ref, ours = compare_with_word2vec(word_list, w2vec_embeddings_json,
                                        reference_filename, k=10)
-    print("Google Word2Vec similarity -> ", ref)
-    print("Our model Word2Vec similarity -> ", ours)
-    most_similar = get_k_most_similar("apple", w2vec_embeddings_json, k=10)
-    print("Most similar to apple -> ", most_similar)
+    for i in range(len(word_list)):
+        print("\nGiven Word", word_list[i], "\n")
+        print("Google Word2Vec similarity \t Our model Word2Vec similarity")
+        print("-"*80)
+        for word1, word2 in zip(ref[i], ours[i]):
+            print("{:^30}{:^0.3f}\t|{:^30}{:^0.3f}".format(word1[0], word1[1], word2[0], word2[1]))
+
+    w = "apple"
+    most_similar = get_k_most_similar(w, w2vec_embeddings_json, k=10)
+    print("\nMost similar to {}".format(w))
+    for word in most_similar:
+        print("({} {:0.3f})".format(word[0], word[1]), end=', ')
 
