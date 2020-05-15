@@ -4,13 +4,12 @@ from nltk.corpus import stopwords
 import os
 import pdb
 import re
-import pandas as pd
 from tqdm import tqdm
 from itertools import chain
 import numpy as np
 import json
 from collections import OrderedDict
-
+import argparse
 
 def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
     """
@@ -48,7 +47,7 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
 
     corpus_list = []
 
-    print("Generating Sentences")
+    print("Generating Sentences from text files")
     for f in tqdm(filelist):
         fo = open(os.path.join(parent_folder, f), 'rb')
         data = fo.read()
@@ -98,9 +97,10 @@ def clean_data(parent_folder, store=False, filename=None, freqency_threshold=1):
     print("Length of corpus of high frequency words :{}".format(len(corpus_list_high_freq)))
 
     if store:
+        print("Storing Corpus")
         with open(filename, 'w') as f:
             json.dump(corpus_list_high_freq, f)
-
+        print("Corpus Stored Successfully")
     return corpus_list, corpus_list_high_freq, sorted_freq_dict
 
 
@@ -129,6 +129,7 @@ def create_cbow_dataset(corpus_list, save_filename=None, context_window=2):
         corpus_list = json.load(fp)
 
     cbow_dataset = []
+    frequency_dict = {}
 
     # get the word frequencies
     print("Getting word frequencies")
@@ -146,6 +147,7 @@ def create_cbow_dataset(corpus_list, save_filename=None, context_window=2):
             cbow_dataset.append(tuple_val)
 
     # create a json file
+    print("Storing CBOW Dataset")
     with open(save_filename, "w") as fp:
         json.dump({'dataset': cbow_dataset, 'freq_dict': frequency_dict}, fp)
 
@@ -238,6 +240,7 @@ def create_skipgram_dataset(corpus_list, save_filename=None, context_window=2):
     skipgram_dataset = [list(i) for i in skipgram_dataset]
 
     # create a JSON file
+    print("Storing Skipgram Dataset")
     with open(save_filename, "w") as fp:
         json.dump({'dataset': skipgram_dataset, 'freq_dict': frequency_dict}, fp)
 

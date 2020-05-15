@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, Subset, SubsetRandomSampler
+from torch.utils.data import DataLoader
 from torch.optim import Adam, RMSprop
 import torch.nn as nn
 
@@ -32,7 +32,7 @@ class W2VTrainer:
 
         # Choose the dataset
         print("Loading dataset")
-        self.dataset = CBOW_dataset(opt.dataset_path) if opt.dataset_type == 'cbow 'else SkipGramDataset(opt.dataset_path)
+        self.dataset = CBOW_dataset(opt.dataset_path) if opt.dataset_type == 'cbow' else SkipGramDataset(opt.dataset_path)
         print("Dataset loaded")
         self.batch_size = opt.batch_size
 
@@ -189,8 +189,10 @@ class W2V_SGNS_Trainer:
             print("Loss after epoch {} : {}".format(epoch + 1, epoch_loss))
 
             if (epoch+1) % opt.checkpoint_interval == 0:
+                if not os.path.exists('checkpoint'):
+                    os.mkdir('checkpoint')
                 print("Saving the model after {} epoch".format(epoch + 1))
-                torch.save(self.network.state_dict(), "w2v_sgns_ckpt_epoch_{}.pth".format(epoch+1))
+                torch.save(self.network.state_dict(), "checkpoint/w2v_sgns_ckpt_epoch_{}.pth".format(epoch+1))
 
                 #testing for the cosine similarity
                 #get the current embedding
@@ -222,6 +224,7 @@ class W2V_SGNS_Trainer:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_type", type=str, default="sgns", help="model type vanilla/sgns")
     parser.add_argument("--epochs", type=int, default=5, help="number of epochs")
     parser.add_argument("--hidden_dim", type=int, default=300, help="size of the hidden layer dimension")
     parser.add_argument("--dataset_type", type=str, default="sgram", help="cbow or skipgram model")
@@ -236,7 +239,10 @@ if __name__ == '__main__':
     print("=" * 10, "HYPERPARAMETERS", "=" * 10)
     print(opt)
 
-    trainer = W2V_SGNS_Trainer(opt)
+    if opt.model_type == 'sgns':
+        trainer = W2V_SGNS_Trainer(opt)
+    else:
+        trainer = W2VTrainer(opt)
 
     if opt.checkpoint_path:
         trainer.network.load_state_dict(torch.load(opt.checkpoint_path))
