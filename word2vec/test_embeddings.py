@@ -243,7 +243,7 @@ if __name__=='__main__':
                                        reference_filename, k=10)
     for i in range(len(word_list)):
         print("\nGiven Word", word_list[i], "\n")
-        print("Google Word2Vec similarity \t Our model Word2Vec similarity")
+        print("\tGoogle Word2Vec similarity \t\t Our model Word2Vec similarity")
         print("-"*80)
         for word1, word2 in zip(ref[i], ours[i]):
             print("{:^30}{:^0.3f}\t|{:^30}{:^0.3f}".format(word1[0], word1[1], word2[0], word2[1]))

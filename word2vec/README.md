@@ -58,6 +58,7 @@ After the training, the model checkpoints will be saved in the ``` checkpoint ``
 cd data
 gdown https://drive.google.com/uc?id=1ND-ED42ciT5QuTSyzFQVQXJpfNqvANmH
 ```
+## Introduction
 This is a repository that contains an implementation of the Word2Vec.
 
 <strong>Word2Vec</strong> is a process(combination of a network archiecture and a cleverly designed supervised learning task) that helps to create word embeddings.
@@ -179,7 +180,7 @@ Eg sentence:<br>
 </table>
 <p class="has-line-data" data-line-start="48" data-line-end="49">For both the cases, the words are represented as one-hot vectors, where the dimensionality of each vector is equal to the size of the vocabulary of the training corpus. So, for CBOW, where the input consists of multiple words, the one-hot vectors are summed up to get the representation of the input context.</p>
 <h2 class="code-line" data-line-start=50 data-line-end=51><a id="The_model_50"></a>The model</h2>
-<p class="has-line-data" data-line-start="51" data-line-end="53">The original work [The original paper] proposes a number of network archietctures of varying complexity and capacity that can be used to for the task. In this work, we follow the feedforward neural net language model[cite the paper].<br>
+<p class="has-line-data" data-line-start="51" data-line-end="53">The [original paper](https://arxiv.org/abs/1301.3781) proposes a number of network archietctures of varying complexity and capacity that can be used to for the task. In this work, we follow the feedforward neural net language model[cite the paper].<br>
 The neural network consists of 3 fully connected layer, absent of any non linear activation within the layers. The sizes (number of nodes) of the different layers depend on the size of the vocabulary and the desired dimensionality of the word embeddings.</p>
 <p class="has-line-data" data-line-start="54" data-line-end="59">For example:<br>
 With <strong>V</strong> as the size of the vocabulary, and <strong>D</strong> as the desired dimensionality of the word embeddings, the network dimensions we use are as follows:<br>
@@ -194,10 +195,10 @@ We use cross entropy loss and Adam optimizer to update the weights.</p>
 Negative sampling converts the problem of <strong>V</strong> way classification problem to a binary classification problem. Instead of outputting the word itself ( <strong>V</strong> way classification), the problem is switched the prediction of whether the words appear in context or not (binary classifictation). That means changing the training data, again.</p>
 <h3 class="code-line" data-line-start=68 data-line-end=69><a id="Skipgram_with_negative_sampling_68"></a>Skipgram with negative sampling</h3>
 <p class="has-line-data" data-line-start="69" data-line-end="70">To make the switch all you need to do is instead of having an input and an output word from its context, select words that appear in context and label them as 1. We have a problem now. Getting the positive samples is easy. We already had that, all we need to do is combine the words in a tuple and slap a 1 for the output. But how to get word pairs that are not in context, or in other words, the negative samples? The authors propose different ways to sample negative examples.</p>
-$$P(word_i) = \frac{f_{wi}^{a}}{\sum_{i=1}^{V}f_{wi}^{a}}$$
 
-where, $f_{wi}$ is the frequency of the word $w_i$ in the corpus and $a$ is a hyperparameter that controls the sampling.
-Eg. 
+<img src="https://latex.codecogs.com/gif.latex?P(word_i)&space;=&space;\frac{f_{wi}^{a}}{\sum_{i=1}^{V}f_{wi}^{a}}\\&space;\\&space;f_{wi}\&space;=&space;frequency\&space;of\&space;Word\&space;w_i\&space;and&space;\\&space;a&space;=&space;Sampling\&space;control\&space;parameter" />
+
+Eg.
 For, a=1, the sampling is equal to the frequency of each word. a=0 results to a uniform sampling.
 
 ### Training Details
@@ -248,6 +249,107 @@ Loss = 0.25489: 20%|###              |18470/93493 [07:20/25:12, 52.10it/s]
 ```
 ### Results
 ---
+** Results for Word2Vec Negative Sampling **
+```python
+>>> get_k_most_similar("fruit", "embeddings_sgns.json", k=10)
+vegetables, tomatoes, vegetable, oranges, fruits, bread, chocolate, herbs, cheese, organic
+
+>>> get_k_most_similar("positive", "embeddings_sgns.json", k=10)
+results, improvement, consistent, optimism, outlook, disappointing, disappointment, expectations, confidence, confident
+
+>>> get_k_most_similar("speak", "embeddings_sgns.json", k=10)
+spoke, spoken, talked, contacted, responded, interviewed, addressed, expressed, quoted, replied
+
+>>> get_k_most_similar("laptop", "embeddings_sgns.json", k=10)
+laptops, keyboard, computer, smartphone, computers, desktop, ipads, device, touchscreen, desk
+
+>>> get_k_most_similar("lion", "embeddings_sgns.json", k=10)
+leopard, elephants, cats, elephant, snake, dog, bison, fur, snakes, rhinoceros
+```
+
+** Results for Word2Vec Two layer neural Net **
+```python
+>>> get_k_most_similar("fruit", "embeddings.json", k=10)
+cakes, eggs, seed, apples, olive, unc, blossom, poison, stretching, der
+
+>>> get_k_most_similar("positive", "embeddings.json", k=10)
+improper, discomfort, reverse, iti, afresh, matrimony, doubting, liable, kilburn, mei
+
+>>> get_k_most_similar("speak", "embeddings.json", k=10)
+answered, ask, tell, wish, done, talk, let, question, so, mother
+
+>>> get_k_most_similar("device", "embeddings.json", k=10)
+wad, medicine, treason, accusation, bernard, sarpent, distorted, understands, wills, scratch
+
+>>> get_k_most_similar("lion", "embeddings.json", k=10)
+warrior, ribs, stead, arbitrary, thompson, lions, theseus, cat, judges, dot,
+```
+
+#### Comparison to Google's Word2Vec model with our SGNS model
+```python
+>>> compare_with_word2vec(['woman', 'fruit', 'bicycle', 'school'], "embeddings_sgns.json",
+                          'data/GoogleNews-vectors-negative300.bin', k=10)
+Given Word woman
+
+  Google Word2Vec similarity              Our model Word2Vec similarity
+--------------------------------------------------------------------------------
+             man              0.766 |           daughter           0.440
+             girl             0.749 |            mother            0.437
+         teenage_girl         0.734 |             girl             0.423
+           teenager           0.632 |            sister            0.415
+             lady             0.629 |             she              0.403
+        teenaged_girl         0.614 |             wife             0.397
+            mother            0.608 |           husband            0.394
+         policewoman          0.607 |           teenager           0.392
+             boy              0.598 |             boy              0.384
+            Woman             0.577 |           parents            0.380
+
+Given Word fruit
+
+  Google Word2Vec similarity              Our model Word2Vec similarity
+--------------------------------------------------------------------------------
+            fruits            0.774 |          vegetables          0.513
+           cherries           0.690 |           tomatoes           0.484
+           berries            0.685 |          vegetable           0.483
+            pears             0.683 |           oranges            0.468
+         citrus_fruit         0.669 |            fruits            0.459
+            mango             0.663 |            bread             0.455
+            grapes            0.651 |          chocolate           0.455
+            berry             0.650 |            herbs             0.451
+           peaches            0.643 |            cheese            0.447
+            apple             0.641 |           organic            0.446
+
+Given Word bicycle
+
+  Google Word2Vec similarity              Our model Word2Vec similarity
+--------------------------------------------------------------------------------
+             bike             0.852 |             bike             0.524
+           scooter            0.751 |            bikes             0.405
+           bicycles           0.736 |          motorcycle          0.388
+          motorcycle          0.697 |           backpack           0.385
+          bicycling           0.696 |           bicycles           0.379
+            bikes             0.693 |             gear             0.370
+        mountain_bike         0.650 |           luggage            0.366
+          skateboard          0.647 |          motorbikes          0.362
+            biking            0.642 |           offroad            0.362
+            moped             0.641 |           buggies            0.361
+
+Given Word school
+
+  Google Word2Vec similarity              Our model Word2Vec similarity
+--------------------------------------------------------------------------------
+          elementary          0.787 |           students           0.394
+           schools            0.741 |           college            0.389
+            shool             0.669 |            police            0.389
+      elementary_schools      0.660 |             home             0.383
+         kindergarten         0.653 |          university          0.376
+         eighth_grade         0.649 |           parents            0.367
+            School            0.648 |             two              0.366
+           teacher            0.638 |          elementary          0.343
+           students           0.630 |           schools            0.332
+          classroom           0.628 |            people            0.331
+
+```
 
 ### Testing
 ---
@@ -255,22 +357,22 @@ To test our trained model, we test it against the Google Word2Vec trained model.
 ```bash
 cd data
 gdown https://drive.google.com/uc?id=0B7XkCwpI5KDYNlNUTTlSS21pQmM
-gunzip GoogleNews-vectors-negative300.bin.gz 
+gunzip GoogleNews-vectors-negative300.bin.gz
 ```
 
-After this, run test_embeddings.py 
+After this, run test_embeddings.py
 ```python
-python test_embeddings.py 
+python test_embeddings.py
 ```
 This shows the comparison between Google's word2vec trained model and our trained model for the words *'woman', 'fruit', 'bicycle', 'school'*. It also shows the k most similar words for the word *apple* achieved by our trained model. These words can be changed in the test_embeddings.py file.
 
 ### Credit and References
 ---
 #### Papers
-####[Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781)
+#### [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781)
 *Tomas Mikolov, Kai Chen, Greg Corrado, Jeffrey Dean*
 
-####[Distributed Representations of Words and Phrases and their Compositionality](https://arxiv.org/abs/1310.4546)
+#### [Distributed Representations of Words and Phrases and their Compositionality](https://arxiv.org/abs/1310.4546)
 *Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado, Jeffrey Dean*
 
 #### Blogs
