@@ -5,4 +5,4 @@ torch==1.1.0
 torchvision==0.3.0
 scipy==1.1.0
 gensim==3.8.3
-gdown==3.10.3
+gdown==5.2.2
